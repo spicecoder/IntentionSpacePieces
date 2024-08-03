@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intention Graph Widget</title>
+  <script src="https://unpkg.com/force-graph@1.41.0/dist/force-graph.min.js"></script>
+  <script src="intentionGraph.js"></script>
+</head>
+<body>
+  <div id="intention-graph-container" style="width: 60%; height: 60vh; border-style: dotted;"></div>
+
+  <script>
+    const graphData = {
+      nodes: [
+        { id: 1, label: 'DesignChunk 1', type: 'DesignChunk' },
+        { id: 2, label: 'Object 1', type: 'Object' },
+        { id: 3, label: 'Intention 1', type: 'Intention' },
+        { id: 4, label: 'LinkLabel 1', type: 'LinkLabel' },
+      ],
+      links: [
+        { source: 1, target: 2, label: 'emits' },
+        { source: 2, target: 3, label: 'reflects' },
+        { source: 3, target: 4, label: 'receives' },
+      ]
+    };
+
+    const config = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      data: graphData,
+      onNodeClick: (node) => {
+        alert(`Node clicked: ${node.label}`);
+      }
+    };
+
+    new IntentionGraph('intention-graph-container', config);
+  </script>
+</body>
+</html>

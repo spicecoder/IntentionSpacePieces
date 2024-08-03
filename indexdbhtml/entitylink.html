@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entity Link Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .section {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .section h2 {
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .button-group {
+            margin-top: 10px;
+        }
+        .top-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .tab.active {
+            background-color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-right">
+        <input type="text" id="json-file-name" placeholder="Enter JSON file name">
+        <button onclick="saveJson()">Save JSON</button>
+        <input type="file" id="json-file-input">
+        <button onclick="importJson()">Import JSON</button>
+        <button onclick="clearAndDeleteDatabase()">Clear and Delete Database</button>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="showSection('entities-section')">Entities</div>
+        <div class="tab" onclick="showSection('links-section')">Links</div>
+        <div class="tab" onclick="showSection('qna-section')">QnA</div>
+    </div>
+    <div class="container">
+        <div class="section active" id="entities-section">
+            <h2>Manage Entities</h2>
+            <div class="form-group">
+                <label for="entity-type">Entity Type</label>
+                <select id="entity-type">
+                    <option value="I">Intention</option>
+                    <option value="O">Object</option>
+                    <option value="L">Level</option>
+                    <option value="D">Designchunk</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="entity-value">Entity Value</label>
+                <input type="text" id="entity-value">
+            </div>
+            <div class="form-group">
+                <label for="existing-entity">Existing Entity</label>
+                <select id="existing-entity" onchange="updateEntityValue()">
+                    <option value="">Select</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button onclick="addEntity()">Add Entity</button>
+                <button onclick="updateEntity()">Update Entity</button>
+                <button onclick="deleteEntity()">Delete Entity</button>
+            </div>
+            <ul id="entity-list"></ul>
+        </div>
+        <div class="section" id="links-section">
+            <h2>Manage Links</h2>
+            <div class="form-group">
+                <label for="link-d1">Designchunk 1</label>
+                <select id="link-d1"></select>
+            </div>
+            <div class="form-group">
+                <label for="link-i1">Intention 1</label>
+                <select id="link-i1"></select>
+            </div>
+            <div class="form-group">
+                <label for="link-o">Object</label>
+                <select id="link-o"></select>
+            </div>
+            <div class="form-group">
+                <label for="link-l">Level</label>
+                <select id="link-l"></select>
+            </div>
+            <div class="form-group">
+                <label for="link-i2">Intention 2</label>
+                <select id="link-i2"></select>
+            </div>
+            <div class="form-group">
+                <label for="link-d2">Designchunk 2</label>
+                <select id="link-d2"></select>
+            </div>
+            <div class="form-group">
+                <label for="existing-link">Existing Link</label>
+                <select id="existing-link"></select>
+            </div>
+            <div class="button-group">
+                <button onclick="addLink()">Add Link</button>
+                <button onclick="updateLink()">Update Link</button>
+                <button onclick="deleteLink()">Delete Link</button>
+            </div>
+            <ul id="link-list"></ul>
+        </div>
+        <div class="section" id="qna-section">
+            <h2>Manage QnA</h2>
+            <div class="form-group">
+                <label for="qna-value">QnA Value</label>
+                <input type="text" id="qna-value">
+            </div>
+            <div class="form-group">
+                <label for="existing-qna">Existing QnA</label>
+                <select id="existing-qna" onchange="updateQnAValue()">
+                    <option value="">Select</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button onclick="addQnA()">Add QnA</button>
+                <button onclick="updateQnA()">Update QnA</button>
+                <button onclick="deleteQnA()">Delete QnA</button>
+            </div>
+            <ul id="qna-list"></ul>
+            <h2>Manage QnA Sets</h2>
+            <div class="form-group">
+                <label for="set-name">Set Name</label>
+                <input type="text" id="set-name">
+            </div>
+            <div class="form-group">
+                <label for="qna1">QnA 1</label>
+                <select id="qna1"></select>
+            </div>
+            <div class="form-group">
+                <label for="qna2">QnA 2</label>
+                <select id="qna2"></select>
+            </div>
+            <div class="form-group">
+                <label for="qna3">QnA 3</label>
+                <select id="qna3"></select>
+            </div>
+            <div class="form-group">
+                <label for="new-qna">Add New QnA</label>
+                <select id="new-qna"></select>
+            </div>
+            <div class="form-group">
+                <label for="existing-set">Existing Set</label>
+                <select id="existing-set"></select>
+            </div>
+            <div class="button-group">
+                <button onclick="addSet()">Add Set</button>
+                <button onclick="updateSet()">Update Set</button>
+                <button onclick="deleteSet()">Delete Set</button>
+            </div>
+            <ul id="set-list"></ul>
+        </div>
+    </div>
+    <script>
+        let db;
+        let selectedType = 'I'; // Default type
+        const keyLength = 65;
+        const qnaLength = 65; // Define the length for QnA keys
+
+        // Update selectedType when entity-type changes
+        document.getElementById('entity-type').addEventListener('change', function() {
+            selectedType = this.value;
+        });
+
+        // Open the IndexedDB
+        const request = indexedDB.open('EntityLinkQADB', 1);
+
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            console.log('Upgrading DB...');
+            if (!db.objectStoreNames.contains('entities')) {
+                const entityStore = db.createObjectStore('entities', { keyPath: 'id', autoIncrement: true });
+                entityStore.createIndex('type', 'type', { unique: false });
+                entityStore.createIndex('value', 'value', { unique: false });
+                entityStore.createIndex('type_value', ['type', 'keyvalue'], { unique: true });
+                entityStore.createIndex('keyvalue', 'keyvalue', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('links')) {
+                const linkStore = db.createObjectStore('links', { keyPath: 'id', autoIncrement: true });
+                linkStore.createIndex('linkValue', 'linkValue', { unique: true });
+            }
+            if (!db.objectStoreNames.contains('qna')) {
+                const qnaStore = db.createObjectStore('qna', { keyPath: 'id', autoIncrement: true });
+                qnaStore.createIndex('value', 'value', { unique: false });
+                qnaStore.createIndex('keyvalue', 'keyvalue', { unique: true });
+            }
+            if (!db.objectStoreNames.contains('sets')) {
+                const setStore = db.createObjectStore('sets', { keyPath: 'id', autoIncrement: true });
+                setStore.createIndex('name', 'name', { unique: true });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            console.log('DB opened successfully');
+            initialize();
+        };
+
+        request.onerror = (event) => {
+            console.error('Database error:', event.target.error);
+        };
+
+        // Ensure functions are only called after DB is initialized
+        function initialize() {
+            if (db) {
+                displayEntities();
+                displayLinks();
+                displayQnA();
+                displaySets();
+            } else {
+                console.log('DB not initialized yet');
+            }
+        }
+
+        // Switch between tabs
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`.tab[onclick="showSection('${sectionId}')"]`).classList.add('active');
+        }
+
+        // Add QnA
+        function addQnA() {
+            const value = document.getElementById('qna-value').value;
+            const keyValue = value.slice(0, qnaLength);
+
+            const transaction = db.transaction(['qna'], 'readwrite');
+            const store = transaction.objectStore('qna');
+            const kindex = store.index('keyvalue');
+
+            // Check if any QnA entry exists with the same starting key characters
+            kindex.getKey(keyValue).onsuccess = function(event) {
+                if (event.target.result) {
+                    alert('QnA value must be unique within the first ' + qnaLength + ' characters.');
+                } else {
+                    const qna = { value, keyvalue: keyValue };
+                    store.add(qna).onsuccess = () => {
+                        displayQnA();
+                    };
+                }
+            };
+        }
+
+        // Update QnA
+        function updateQnA() {
+            const existingQnAId = parseInt(document.getElementById('existing-qna').value);
+            const value = document.getElementById('qna-value').value;
+            const keyValue = value.slice(0, qnaLength);
+
+            if (!existingQnAId || !value) {
+                alert('Please select an existing QnA and provide a new value.');
+                return;
+            }
+
+            const transaction = db.transaction(['qna'], 'readwrite');
+            const store = transaction.objectStore('qna');
+            const kindex = store.index('keyvalue');
+
+            // Check if any QnA entry exists with the same starting key characters
+            kindex.getKey(keyValue).onsuccess = function(event) {
+                if (event.target.result && event.target.result !== existingQnAId) {
+                    alert('QnA value must be unique within the first ' + qnaLength + ' characters.');
+                } else {
+                    store.get(existingQnAId).onsuccess = (event) => {
+                        const qna = event.target.result;
+                        qna.value = value;
+                        qna.keyvalue = keyValue;
+
+                        store.put(qna).onsuccess = () => {
+                            displayQnA();
+                        };
+                    };
+                }
+            };
+        }
+
+        // Delete QnA
+        function deleteQnA() {
+            const existingQnAId = parseInt(document.getElementById('existing-qna').value);
+
+            if (!existingQnAId) {
+                alert('Please select an existing QnA to delete.');
+                return;
+            }
+
+            // Check if the QnA is part of any set
+            const transaction = db.transaction(['sets'], 'readonly');
+            const store = transaction.objectStore('sets');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const sets = request.result;
+                const qna = document.querySelector(`#existing-qna option[value="${existingQnAId}"]`).textContent;
+                const isPartOfSet = sets.some(set => set.qnaValues.includes(qna.slice(0, qnaLength)));
+
+                if (isPartOfSet) {
+                    alert('Cannot delete a QnA that is part of a set.');
+                } else {
+                    const deleteTransaction = db.transaction(['qna'], 'readwrite');
+                    const qnaStore = deleteTransaction.objectStore('qna');
+                    const deleteRequest = qnaStore.delete(existingQnAId);
+
+                    deleteRequest.onsuccess = () => {
+                        displayQnA();
+                    };
+
+                    deleteRequest.onerror = () => {
+                        alert('Error deleting QnA.');
+                    };
+                }
+            };
+        }
+
+        // Display QnA
+        function displayQnA() {
+            if (!db) {
+                console.log('DB not initialized');
+                return;
+            }
+            const transaction = db.transaction(['qna'], 'readonly');
+            const store = transaction.objectStore('qna');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const qnaList = document.getElementById('qna-list');
+                qnaList.innerHTML = '';
+                const qnaSelect = document.getElementById('existing-qna');
+                qnaSelect.innerHTML = '<option value="">Select</option>';
+                const qna1Select = document.getElementById('qna1');
+                const qna2Select = document.getElementById('qna2');
+                const qna3Select = document.getElementById('qna3');
+                const newQnaSelect = document.getElementById('new-qna');
+
+                [qna1Select, qna2Select, qna3Select, newQnaSelect].forEach(select => {
+                    if (select) {
+                        select.innerHTML = '<option value="">Select</option>';
+                    }
+                });
+
+                request.result.forEach(qna => {
+                    const li = document.createElement('li');
+                    li.textContent = qna.value;
+                    qnaList.appendChild(li);
+
+                    const option = document.createElement('option');
+                    option.value = qna.id;
+                    option.textContent = qna.value;
+
+                    qnaSelect.appendChild(option);
+
+                    const qnaOption = document.createElement('option');
+                    qnaOption.value = qna.value;
+                    qnaOption.textContent = qna.value;
+
+                    if (qna1Select) qna1Select.appendChild(qnaOption.cloneNode(true));
+                    if (qna2Select) qna2Select.appendChild(qnaOption.cloneNode(true));
+                    if (qna3Select) qna3Select.appendChild(qnaOption.cloneNode(true));
+                    if (newQnaSelect) newQnaSelect.appendChild(qnaOption);
+                });
+            };
+        }
+
+        // Add Entity
+        function addEntity() {
+            const value = document.getElementById('entity-value').value;
+            const keyValue = value.slice(0, keyLength);
+            const entity = { type: selectedType, value: value, keyvalue: keyValue, type_value: [selectedType, keyValue] };
+
+            const transaction = db.transaction(['entities'], 'readwrite');
+            const store = transaction.objectStore('entities');
+            const tindex = store.index('type_value');
+
+            // Check if any entity exists with the same type and starting key characters
+            tindex.getKey([selectedType, keyValue]).onsuccess = function(event) {
+                if (event.target.result) {
+                    alert('Entity type and value combination must be unique within the first ' + keyLength + ' characters.');
+                } else {
+                    store.add(entity).onsuccess = () => {
+                        displayEntities();
+                    };
+                }
+            };
+        }
+
+        // Update Entity
+        function updateEntity() {
+            const existingEntityId = parseInt(document.getElementById('existing-entity').value);
+            const value = document.getElementById('entity-value').value;
+            const keyValue = value.slice(0, keyLength);
+
+            if (!existingEntityId || !value) {
+                alert('Please select an existing entity and provide a new value.');
+                return;
+            }
+
+            const transaction = db.transaction(['entities'], 'readwrite');
+            const store = transaction.objectStore('entities');
+            const tindex = store.index('type_value');
+
+            // Check if any entity exists with the same type and starting key characters
+            tindex.getKey([selectedType, keyValue]).onsuccess = function(event) {
+                if (event.target.result && event.target.result !== existingEntityId) {
+                    alert('Entity type and value combination must be unique within the first ' + keyLength + ' characters.');
+                } else {
+                    store.get(existingEntityId).onsuccess = (event) => {
+                        const entity = event.target.result;
+                        entity.value = value;
+                        entity.keyvalue = keyValue;
+                        entity.type_value = [entity.type, keyValue];
+
+                        store.put(entity).onsuccess = () => {
+                            displayEntities();
+                        };
+                    };
+                }
+            };
+        }
+
+        // Delete Entity
+        function deleteEntity() {
+            const existingEntityId = parseInt(document.getElementById('existing-entity').value);
+
+            if (!existingEntityId) {
+                alert('Please select an existing entity to delete.');
+                return;
+            }
+
+            // Check if the entity is part of any link
+            const transaction = db.transaction(['links'], 'readonly');
+            const store = transaction.objectStore('links');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const links = request.result;
+                const entity = document.querySelector(`#existing-entity option[value="${existingEntityId}"]`).textContent.split(': ')[1];
+                const isPartOfLink = links.some(link => link.linkValue.includes(entity.slice(0, keyLength)));
+
+                if (isPartOfLink) {
+                    alert('Cannot delete an entity that is part of a link.');
+                } else {
+                    const deleteTransaction = db.transaction(['entities'], 'readwrite');
+                    const entityStore = deleteTransaction.objectStore('entities');
+                    const deleteRequest = entityStore.delete(existingEntityId);
+
+                    deleteRequest.onsuccess = () => {
+                        displayEntities();
+                    };
+
+                    deleteRequest.onerror = () => {
+                        alert('Error deleting entity.');
+                    };
+                }
+            };
+        }
+
+        // Display Entities
+        function displayEntities() {
+            if (!db) {
+                console.log('DB not initialized');
+                return;
+            }
+            const transaction = db.transaction(['entities'], 'readonly');
+            const store = transaction.objectStore('entities');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const entityList = document.getElementById('entity-list');
+                entityList.innerHTML = '';
+                const entitySelect = document.getElementById('existing-entity');
+                entitySelect.innerHTML = '<option value="">Select</option>';
+                const d1Select = document.getElementById('link-d1');
+                const d2Select = document.getElementById('link-d2');
+                const i1Select = document.getElementById('link-i1');
+                const i2Select = document.getElementById('link-i2');
+                const oSelect = document.getElementById('link-o');
+                const lSelect = document.getElementById('link-l');
+                
+                [d1Select, d2Select, i1Select, i2Select, oSelect, lSelect].forEach(select => {
+                    if (select) {
+                        select.innerHTML = '<option value="">Select</option>';
+                    }
+                });
+
+                request.result.forEach(entity => {
+                    const li = document.createElement('li');
+                    li.textContent = `${entity.type}: ${entity.value}`;
+                    entityList.appendChild(li);
+
+                    const option = document.createElement('option');
+                    option.value = entity.id;
+                    option.textContent = `${entity.type}: ${entity.value}`;
+
+                    entitySelect.appendChild(option);
+
+                    const entityOption = document.createElement('option');
+                    entityOption.value = entity.value;
+                    entityOption.textContent = entity.value;
+
+                    switch(entity.type) {
+                        case 'D':
+                            if (d1Select) d1Select.appendChild(entityOption.cloneNode(true));
+                            if (d2Select) d2Select.appendChild(entityOption);
+                            break;
+                        case 'I':
+                            if (i1Select) i1Select.appendChild(entityOption.cloneNode(true));
+                            if (i2Select) i2Select.appendChild(entityOption);
+                            break;
+                        case 'O':
+                            if (oSelect) oSelect.appendChild(entityOption);
+                            break;
+                        case 'L':
+                            if (lSelect) lSelect.appendChild(entityOption);
+                            break;
+                    }
+                });
+            };
+        }
+
+        // Add Link
+        function addLink() {
+            const d1 = document.getElementById('link-d1').value;
+            const i1 = document.getElementById('link-i1').value;
+            const o = document.getElementById('link-o').value;
+            const l = document.getElementById('link-l').value;
+            const i2 = document.getElementById('link-i2').value;
+            const d2 = document.getElementById('link-d2').value;
+            const linkValue = [d1, i1, o, l, i2, d2].map(val => val.slice(0, keyLength));
+
+            if (linkValue.length !== 6 || linkValue.includes('') || !validateLink(linkValue)) {
+                alert('Invalid link value or duplicate link.');
+                return;
+            }
+
+            const link = { linkValue: linkValue.join(',') };
+
+            const transaction = db.transaction(['links'], 'readwrite');
+            const store = transaction.objectStore('links');
+            const request = store.add(link);
+
+            request.onsuccess = () => {
+                displayLinks();
+            };
+
+            request.onerror = () => {
+                alert('Link value must be unique.');
+            };
+        }
+
+        // Update Link
+        function updateLink() {
+            const existingLinkId = parseInt(document.getElementById('existing-link').value);
+            const d1 = document.getElementById('link-d1').value;
+            const i1 = document.getElementById('link-i1').value;
+            const o = document.getElementById('link-o').value;
+            const l = document.getElementById('link-l').value;
+            const i2 = document.getElementById('link-i2').value;
+            const d2 = document.getElementById('link-d2').value;
+            const linkValue = [d1, i1, o, l, i2, d2].map(val => val.slice(0, keyLength));
+
+            if (!existingLinkId || linkValue.includes('')) {
+                alert('Please select an existing link and provide all values.');
+                return;
+            }
+
+            const transaction = db.transaction(['links'], 'readwrite');
+            const store = transaction.objectStore('links');
+            const request = store.get(existingLinkId);
+
+            request.onsuccess = () => {
+                const link = request.result;
+                link.linkValue = linkValue.join(',');
+
+                const updateRequest = store.put(link);
+
+                updateRequest.onsuccess = () => {
+                    displayLinks();
+                };
+
+                updateRequest.onerror = () => {
+                    alert('Link value must be unique.');
+                };
+            };
+        }
+
+        // Delete Link
+        function deleteLink() {
+            const existingLinkId = parseInt(document.getElementById('existing-link').value);
+
+            if (!existingLinkId) {
+                alert('Please select an existing link to delete.');
+                return;
+            }
+
+            const transaction = db.transaction(['links'], 'readwrite');
+            const store = transaction.objectStore('links');
+            const request = store.delete(existingLinkId);
+
+            request.onsuccess = () => {
+                displayLinks();
+            };
+
+            request.onerror = () => {
+                alert('Error deleting link.');
+            };
+        }
+
+        // Display Links
+        function displayLinks() {
+            if (!db) {
+                console.log('DB not initialized');
+                return;
+            }
+            const transaction = db.transaction(['links'], 'readonly');
+            const store = transaction.objectStore('links');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const linkList = document.getElementById('link-list');
+                linkList.innerHTML = '';
+                const linkSelect = document.getElementById('existing-link');
+                linkSelect.innerHTML = '<option value="">Select</option>';
+
+                request.result.forEach(link => {
+                    const li = document.createElement('li');
+                    li.textContent = link.linkValue;
+                    linkList.appendChild(li);
+
+                    const option = document.createElement('option');
+                    option.value = link.id;
+                    option.textContent = link.linkValue;
+
+                    linkSelect.appendChild(option);
+                });
+            };
+        }
+
+        // Validate Link
+        function validateLink(linkValue) {
+            let isValid = true;
+            const transaction = db.transaction(['links'], 'readonly');
+            const store = transaction.objectStore('links');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                request.result.forEach(link => {
+                    const existingLink = link.linkValue.split(',');
+                    // Check if the level and i1-o-i2 trio already exist
+                    if (existingLink[3] === linkValue[3] && existingLink[1] === linkValue[1] && existingLink[2] === linkValue[2] && existingLink[4] === linkValue[4]) {
+                        isValid = false;
+                    }
+                });
+            };
+            return isValid;
+        }
+
+        // Add Set
+        function addSet() {
+            const name = document.getElementById('set-name').value;
+            const qna1 = document.getElementById('qna1').value;
+            const qna2 = document.getElementById('qna2').value;
+            const qna3 = document.getElementById('qna3').value;
+            const qnaValues = [qna1, qna2, qna3].filter(val => val !== '');
+
+            if (!name || qnaValues.length === 0) {
+                alert('Please provide a set name and at least one QnA.');
+                return;
+            }
+
+            const set = { name: name.slice(0, keyLength), qnaValues: qnaValues };
+
+            const transaction = db.transaction(['sets'], 'readwrite');
+            const store = transaction.objectStore('sets');
+            const nameIndex = store.index('name');
+
+            // Check if any set exists with the same name
+            nameIndex.getKey(set.name).onsuccess = function(event) {
+                if (event.target.result) {
+                    alert('Set name must be unique within the first ' + keyLength + ' characters.');
+                } else {
+                    store.add(set).onsuccess = () => {
+                        displaySets();
+                    };
+                }
+            };
+        }
+
+        // Update Set
+        function updateSet() {
+            const existingSetId = parseInt(document.getElementById('existing-set').value);
+            const name = document.getElementById('set-name').value;
+            const qna1 = document.getElementById('qna1').value;
+            const qna2 = document.getElementById('qna2').value;
+            const qna3 = document.getElementById('qna3').value;
+            const newQna = document.getElementById('new-qna').value;
+            const qnaValues = [qna1, qna2, qna3, newQna].filter(val => val !== '');
+
+            if (!existingSetId || !name || qnaValues.length === 0) {
+                alert('Please select an existing set, provide a set name, and at least one QnA.');
+                return;
+            }
+
+            const transaction = db.transaction(['sets'], 'readwrite');
+            const store = transaction.objectStore('sets');
+            const nameIndex = store.index('name');
+
+            // Check if any set exists with the same name
+            nameIndex.getKey(name.slice(0, keyLength)).onsuccess = function(event) {
+                if (event.target.result && event.target.result !== existingSetId) {
+                    alert('Set name must be unique within the first ' + keyLength + ' characters.');
+                } else {
+                    store.get(existingSetId).onsuccess = (event) => {
+                        const set = event.target.result;
+                        set.name = name.slice(0, keyLength);
+                        set.qnaValues = qnaValues;
+
+                        store.put(set).onsuccess = () => {
+                            displaySets();
+                        };
+                    };
+                }
+            };
+        }
+
+        // Delete Set
+        function deleteSet() {
+            const existingSetId = parseInt(document.getElementById('existing-set').value);
+
+            if (!existingSetId) {
+                alert('Please select an existing set to delete.');
+                return;
+            }
+
+            const transaction = db.transaction(['sets'], 'readwrite');
+            const store = transaction.objectStore('sets');
+            const request = store.delete(existingSetId);
+
+            request.onsuccess = () => {
+                displaySets();
+            };
+
+            request.onerror = () => {
+                alert('Error deleting set.');
+            };
+        }
+
+        // Display Sets
+        function displaySets() {
+            if (!db) {
+                console.log('DB not initialized');
+                return;
+            }
+            const transaction = db.transaction(['sets'], 'readonly');
+            const store = transaction.objectStore('sets');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const setList = document.getElementById('set-list');
+                setList.innerHTML = '';
+                const setSelect = document.getElementById('existing-set');
+                setSelect.innerHTML = '<option value="">Select</option>';
+
+                request.result.forEach(set => {
+                    const li = document.createElement('li');
+                    li.textContent = `${set.name}: ${set.qnaValues.join(', ')}`;
+                    setList.appendChild(li);
+
+                    const option = document.createElement('option');
+                    option.value = set.id;
+                    option.textContent = set.name;
+
+                    setSelect.appendChild(option);
+                });
+            };
+        }
+
+        // Save JSON function
+        function saveJson() {
+            const fileName = document.getElementById('json-file-name').value || 'data';
+            const data = {};
+
+            const transaction = db.transaction(['entities', 'links', 'qna', 'sets'], 'readonly');
+            const entityStore = transaction.objectStore('entities');
+            const linkStore = transaction.objectStore('links');
+            const qnaStore = transaction.objectStore('qna');
+            const setStore = transaction.objectStore('sets');
+
+            entityStore.getAll().onsuccess = (event) => {
+                data.entities = event.target.result;
+
+                linkStore.getAll().onsuccess = (event) => {
+                    data.links = event.target.result;
+
+                    qnaStore.getAll().onsuccess = (event) => {
+                        data.qna = event.target.result;
+
+                        setStore.getAll().onsuccess = (event) => {
+                            data.sets = event.target.result;
+
+                            const json = JSON.stringify(data, null, 2);
+                            const blob = new Blob([json], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `${fileName}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        };
+                    };
+                };
+            };
+        }
+
+        // Import JSON function
+        function importJson() {
+            const fileInput = document.getElementById('json-file-input');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a JSON file to import.');
+                return;
+            }
+            if (!confirm('This will overwrite existing data. Do you want to proceed?')) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const data = JSON.parse(event.target.result);
+                const transaction = db.transaction(['entities', 'links', 'qna', 'sets'], 'readwrite');
+                const entityStore = transaction.objectStore('entities');
+                const linkStore = transaction.objectStore('links');
+                const qnaStore = transaction.objectStore('qna');
+                const setStore = transaction.objectStore('sets');
+
+                // Clear existing data
+                entityStore.clear().onsuccess = () => {
+                    linkStore.clear().onsuccess = () => {
+                        qnaStore.clear().onsuccess = () => {
+                            setStore.clear().onsuccess = () => {
+                                // Import new data
+                                if (data.entities && data.links && data.qna && data.sets) {
+                                    data.entities.forEach(entity => {
+                                        entityStore.add(entity);
+                                    });
+                                    data.links.forEach(link => {
+                                        linkStore.add(link);
+                                    });
+                                    data.qna.forEach(qna => {
+                                        qnaStore.add(qna);
+                                    });
+                                    data.sets.forEach(set => {
+                                        setStore.add(set);
+                                    });
+
+                                    transaction.oncomplete = () => {
+                                        displayEntities();
+                                        displayLinks();
+                                        displayQnA();
+                                        displaySets();
+                                        alert('Data imported successfully.');
+                                    };
+                                } else {
+                                    alert('Invalid JSON file format.');
+                                }
+                            };
+                        };
+                    };
+                };
+            };
+            reader.readAsText(file);
+        }
+
+        // Clear Database function
+        function clearAndDeleteDatabase() {
+            if (!confirm('This will clear all data in the database and delete the database. Do you want to proceed?')) {
+                return;
+            }
+
+            const transaction = db.transaction(['entities', 'links', 'qna', 'sets'], 'readwrite');
+            const entityStore = transaction.objectStore('entities');
+            const linkStore = transaction.objectStore('links');
+            const qnaStore = transaction.objectStore('qna');
+            const setStore = transaction.objectStore('sets');
+
+            entityStore.clear().onsuccess = () => {
+                linkStore.clear().onsuccess = () => {
+                    qnaStore.clear().onsuccess = () => {
+                        setStore.clear().onsuccess = () => {
+                            const deleteRequest = indexedDB.deleteDatabase('EntityLinkQADB');
+                    
+                            deleteRequest.onsuccess = () => {
+                                console.log('Database cleared and deleted successfully');
+                                alert('Database cleared and deleted successfully');
+                                location.reload(); // Reload the page to reinitialize the database
+                            };
+
+                            deleteRequest.onerror = (event) => {
+                                console.error('Error deleting database:', event.target.error);
+                                alert('Error deleting database');
+                            };
+                        };
+                    };
+                };
+            };
+        }
+
+        // Update the value field when an existing entity is selected
+        function updateEntityValue() {
+            const existingEntityId = parseInt(document.getElementById('existing-entity').value);
+
+            if (!existingEntityId) {
+                document.getElementById('entity-value').value = '';
+                return;
+            }
+
+            const transaction = db.transaction(['entities'], 'readonly');
+            const store = transaction.objectStore('entities');
+            store.get(existingEntityId).onsuccess = (event) => {
+                const entity = event.target.result;
+                document.getElementById('entity-value').value = entity.value; // Full value
+            };
+        }
+
+        // Update the value field when an existing QnA is selected
+        function updateQnAValue() {
+            const existingQnAId = parseInt(document.getElementById('existing-qna').value);
+
+            if (!existingQnAId) {
+                document.getElementById('qna-value').value = '';
+                return;
+            }
+
+            const transaction = db.transaction(['qna'], 'readonly');
+            const store = transaction.objectStore('qna');
+            store.get(existingQnAId).onsuccess = (event) => {
+                const qna = event.target.result;
+                document.getElementById('qna-value').value = qna.value; // Full value
+            };
+        }
+
+        // Initialize display after the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initialize();
+        });
+    </script>
+</body>
+</html>
